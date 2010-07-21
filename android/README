@@ -1,0 +1,80 @@
+How to make this binary for Android
+
+BUILD ANDROID
+=============
+
+Grab a copy of android-on-freerunner source and build it. Instructions, here:
+
+http://code.google.com/p/android-on-freerunner/wiki/BuildIt
+
+You need to install a bunch of packages, export some values, etc.
+
+INJECT SOURCE TO ALSA-UTILS
+===========================
+
+1. Go to <android-on-freerunner-root>/external/alsa-utils directory.
+2. Create directory gta02-gsm-bt-fix-src (name must be different from
+   gta02-gsm-bt-fix, thus -src suffix).
+3. Copy all *.c and *.h files from gta02-gsm-bt-fix repository.
+4. Edit <android-on-freerunner-root>/external/alsa-utils/Android.mk file
+   * look how alsa_aplay, alsa_ctl and other tools are defined
+   * copy alsa_aplay a block, change:
+     * aplay/aplay.c to gta02-gsm-bt-fix-src/gta02-gsm-bt-fix.c
+     * LOCAL_MODULE := alsa_aplay to LOCAL_MODULE := gta02-gsm-bt-fix
+     * comment out LOCAL_MODULE_TAGS := debug
+5. Go to <android-on-freerunner-root>, and build as you did before
+   according to BuildIt link.
+6. Locate your brand new gta02-gsm-bt-fix for android at the following path:
+   <android-on-freerunner-root>/out/target/product/freerunner
+   /system/bin/gta02-gsm-bt-fix
+
+REFERENCE <android-on-freerunner-root>/external/alsa-utils/Android.mk
+=====================================================================
+
+To verify you get the point 4 right, here is how my Android.mk looks like:
+
+<<< original beginning >>>
+
+ifeq ($(strip $(BOARD_USES_ALSA_AUDIO)),true)
+ifeq ($(strip $(BUILD_WITH_ALSA_UTILS)),true)
+
+LOCAL_PATH:= $(call my-dir)
+
+<<< here's the inserted part >>>
+
+#
+# Build gta02-gsm-bt-fix command
+#
+
+include $(CLEAR_VARS)
+
+LOCAL_CFLAGS := \
+    -fPIC -D_POSIX_SOURCE \
+    -DALSA_CONFIG_DIR=\"/system/usr/share/alsa\" \
+    -DALSA_PLUGIN_DIR=\"/system/usr/lib/alsa-lib\" \
+    -DALSA_DEVICE_DIRECTORY=\"/dev/snd/\"
+
+LOCAL_C_INCLUDES:= \
+    $(LOCAL_PATH)/include \
+    $(LOCAL_PATH)/android \
+    external/alsa-lib/include
+
+LOCAL_SRC_FILES := \
+    gta02-gsm-bt-fix-src/gta02-gsm-bt-fix.c
+
+#LOCAL_MODULE_TAGS := debug
+LOCAL_MODULE := gta02-gsm-bt-fix
+
+LOCAL_SHARED_LIBRARIES := \
+    libaudio \
+    libc
+
+include $(BUILD_EXECUTABLE)
+
+<<< end of inserted part >>>
+
+#
+# Build aplay command
+#
+
+<<< then the file continues without modifications >>>
